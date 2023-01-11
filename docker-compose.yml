@@ -1,0 +1,17 @@
+version: '3.7'
+
+services:
+  database:
+    image: postgres:14
+    container_name: oauth2_database
+    ports:
+      - '5432:5432'
+    volumes:
+      - 'postgres_data:/var/lib/postgresql/data'
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+
+volumes:
+  postgres_data:
