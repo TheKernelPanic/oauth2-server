@@ -4,7 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"golang.org/x/crypto/bcrypt"
+	"oauth2/config"
 	"strings"
+	"time"
 )
 
 func GenerateToken() string {
@@ -36,4 +39,26 @@ func DecodeHeaderCredentials(header string) (clientID string, clientSecret strin
 	clientSecret = pieces[1]
 
 	return clientID, clientSecret
+}
+
+func PasswordHash(plain string) string {
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(plain), config.PasswordHashDefaultCost)
+	if err != nil {
+		panic(err)
+	}
+	return string(hash)
+}
+
+func PasswordVerify(hash string, plain string) bool {
+
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(plain))
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func CheckDateIsExpired(date *time.Time) bool {
+	return date.Unix() < time.Now().Unix()
 }
