@@ -5,6 +5,7 @@ const (
 	GrantTypePassword          = "password"
 	GrantTypeAuthorizationCode = "authorization_code"
 	GrantTypeRefreshToken      = "refresh_token"
+	GrantTypeJwtBearer         = "urn:ietf:params:oauth:grant-type:jwt-bearer"
 )
 
 const (

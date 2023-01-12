@@ -4,8 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"oauth2/config"
+	"oauth2/dto"
 	"strings"
 	"time"
 )
@@ -61,4 +63,15 @@ func PasswordVerify(hash string, plain string) bool {
 
 func CheckDateIsExpired(date *time.Time) bool {
 	return date.Unix() < time.Now().Unix()
+}
+
+func GenerateJwt(privateKey string, params dto.JwtParams) string {
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, params)
+
+	tokenToString, err := token.SignedString(privateKey)
+	if err != nil {
+		panic(err)
+	}
+	return tokenToString
 }

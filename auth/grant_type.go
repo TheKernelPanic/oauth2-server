@@ -200,3 +200,35 @@ func (grantType *RefreshTokenGrantType) CreateAccessToken(scopeRequested string)
 	}
 	return accessTokenResponse
 }
+
+type JwtBearerGrantType struct {
+	Client repository.Client
+}
+
+func (grantType *JwtBearerGrantType) GetIdentifier() string {
+	return config.GrantTypeJwtBearer
+}
+func (grantType *JwtBearerGrantType) ValidateRequest(request dto.TokenRequest) error {
+
+	if request.Assertion == "" {
+		return errors.New("Missing parameters: \"assertion\" required")
+	}
+
+	return nil
+}
+func (grantType *JwtBearerGrantType) CreateAccessToken(scopeRequested string) dto.AccessTokenResponse {
+
+	accessTokenResponse := dto.AccessTokenResponse{
+		ExpiresIn:   config.AccessTokenLifeTime,
+		Type:        "bearer",
+		AccessToken: util.GenerateToken(),
+		Scope:       scopeRequested}
+
+	repository.PersistAccessToken(
+		accessTokenResponse.AccessToken,
+		accessTokenResponse.Scope,
+		grantType.Client,
+		config.AccessTokenLifeTime)
+
+	return accessTokenResponse
+}

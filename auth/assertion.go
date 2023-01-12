@@ -11,7 +11,7 @@ import (
 func ClientAssertion(request dto.TokenRequest) (GrantType, error) {
 
 	if request.ClientID == "" {
-		return nil, errors.New("no client id supplied")
+		return nil, errors.New("no clit id supplied")
 	}
 	client, err := repository.FindClientById(request.ClientID)
 	if err != nil {
