@@ -1,13 +1,17 @@
 package auth
 
-import "oauth2/repository"
+import (
+	"oauth2/dto"
+	"oauth2/repository"
+	"oauth2/util"
+)
 
 type GrantType interface {
 	GetClient() repository.Client
 	GetIdentifier() string
 	ValidateRequest() error
 	SetClient(client repository.Client) GrantType
-	CreateAccessToken() (string, int32, string)
+	CreateAccessToken(scopeRequested string) dto.AccessTokenResponse
 }
 
 // Client credentials
@@ -28,8 +32,20 @@ func (grantType ClientCredentialsGrantType) ValidateRequest() error {
 	return nil
 }
 
-func (grantType ClientCredentialsGrantType) CreateAccessToken() (string, int32, string) {
-	return "", ExpirationTokenLifeTime, ""
+func (grantType ClientCredentialsGrantType) CreateAccessToken(scopeRequested string) dto.AccessTokenResponse {
+
+	accessTokenResponse := dto.AccessTokenResponse{
+		ExpiresIn:   ExpirationTokenLifeTime,
+		Type:        "bearer",
+		AccessToken: util.GenerateToken(),
+		Scope:       scopeRequested}
+	repository.PersistAccessToken(
+		accessTokenResponse.AccessToken,
+		accessTokenResponse.Scope,
+		grantType.GetClient(),
+		ExpirationTokenLifeTime)
+
+	return accessTokenResponse
 }
 
 func (grantType ClientCredentialsGrantType) SetClient(client repository.Client) GrantType {

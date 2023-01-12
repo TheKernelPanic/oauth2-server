@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"oauth2/auth"
 	"oauth2/util"
 )
 
@@ -12,13 +13,6 @@ type TokenRequest struct {
 	Scope        string `form:"scope"`
 	Username     string `form:"username"`
 	Password     string `form:"password"`
-}
-
-type AccessTokenResponse struct {
-	AccessToken string `json:"access_token""`
-	Type        string `json:"token_type"`
-	ExpiresIn   int32  `json:"expires_in"`
-	Scope       string `json:"scope"`
 }
 
 func TokenController(context *fiber.Ctx) error {
@@ -36,10 +30,10 @@ func TokenController(context *fiber.Ctx) error {
 	if authorizationHeader != "" {
 		request.ClientID, request.ClientSecret = util.DecodeHeaderCredentials(authorizationHeader)
 	}
-	//client, err := auth.ClientAssertion(request.ClientID, request.ClientSecret, request.GrantType, request.Scope)
-	//if err != nil {
-	//	return context.Status(401).SendString(err.Error())
-	//}
+	grantType, err := auth.ClientAssertion(request.ClientID, request.ClientSecret, request.GrantType, request.Scope)
+	if err != nil {
+		return context.Status(401).SendString(err.Error())
+	}
 
 	//accessTokenResponse := AccessTokenResponse{
 	//	ExpiresIn: auth.ExpirationTokenLifeTime,
@@ -54,5 +48,5 @@ func TokenController(context *fiber.Ctx) error {
 	Check available scope with requested scope
 	*/
 
-	return context.Status(200).JSON(nil)
+	return context.Status(200).JSON(grantType.CreateAccessToken(request.Scope))
 }
