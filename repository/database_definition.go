@@ -1,6 +1,9 @@
 package repository
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type Client struct {
 	ID          string            `gorm:"primary_key;column:client_id;type:varchar(36);default:uuid_generate_v4()"`
@@ -16,7 +19,7 @@ func (Client) TableName() string {
 }
 
 type ClientGrantType struct {
-	ID        int    `gorm:"primary_key;column:id;type:integer"`
+	ID        uint   `gorm:"primary_key;column:id;type:integer"`
 	ClientID  string `gorm:"type:varchar(36);index:composite,unique;not null"`
 	GrantType string `gorm:"type:varchar(28);index:composite,unique;column:grant_type"`
 }
@@ -26,10 +29,10 @@ func (ClientGrantType) TableName() string {
 }
 
 type AccessToken struct {
-	Token    string    `gorm:"primary_key;type:varchar(40)"`
-	Scope    string    `gorm:"type:varchar(4000);not null"`
-	User     User      `gorm:"references:ID"`
-	UserID   int       `gorm:"column:user_id;type:integer"`
+	Token    string `gorm:"primary_key;type:varchar(40)"`
+	Scope    string `gorm:"type:varchar(4000);not null"`
+	User     User   `gorm:"references:ID"`
+	UserID   sql.NullInt32
 	ClientID string    `gorm:"column:client_id;type:varchar(36);not null"`
 	Client   Client    `gorm:"references:ID"`
 	Expires  time.Time `gorm:"column:expires;type:timestamp;not null"`
@@ -40,14 +43,17 @@ func (AccessToken) TableName() string {
 }
 
 type User struct {
-	ID            int    `gorm:"primary_key;column:id;type:integer"`
-	Username      string `gorm:"type:varchar(128);not null;uniqueIndex"`
-	Password      string `gorm:"type:varchar(255);not null"`
-	FirstName     string `gorm:"type:varchar(128)"`
-	LastName      string `gorm:"type:varchar(128)"`
-	Email         string `gorm:"type:varchar(320);not null;uniqueIndex"`
-	EmailVerified bool   `gorm:"type:boolean;not null;default:false"`
-	Scope         string `gorm:"type:varchar(4000)"`
+	ID                 uint                `gorm:"primary_key;column:id;type:integer"`
+	Username           string              `gorm:"type:varchar(128);not null;uniqueIndex"`
+	Password           string              `gorm:"type:varchar(255);not null"`
+	FirstName          string              `gorm:"type:varchar(128)"`
+	LastName           string              `gorm:"type:varchar(128)"`
+	Email              string              `gorm:"type:varchar(320);not null;uniqueIndex"`
+	EmailVerified      bool                `gorm:"type:boolean;not null;default:false"`
+	Scope              string              `gorm:"type:varchar(4000)"`
+	AccessTokens       []AccessToken       `gorm:"foreignKey:UserID;references:ID;"`
+	RefreshTokens      []RefreshToken      `gorm:"foreignKey:UserID;references:ID;"`
+	AuthorizationCodes []AuthorizationCode `gorm:"foreignKey:UserID;references:ID;"`
 }
 
 func (User) TableName() string {
@@ -55,10 +61,10 @@ func (User) TableName() string {
 }
 
 type RefreshToken struct {
-	Token    string     `gorm:"primary_key;type:varchar(40)"`
-	Scope    string     `gorm:"type:varchar(4000);not null"`
-	User     User       `gorm:"references:ID"`
-	UserID   int        `gorm:"column:user_id;type:integer"`
+	Token    string `gorm:"primary_key;type:varchar(40)"`
+	Scope    string `gorm:"type:varchar(4000);not null"`
+	User     User   `gorm:"references:ID"`
+	UserID   sql.NullInt32
 	ClientID string     `gorm:"column:client_id;type:varchar(36)"`
 	Client   Client     `gorm:"references:ID"`
 	Expires  *time.Time `gorm:"column:expires;type:timestamp"`
@@ -69,11 +75,11 @@ func (RefreshToken) TableName() string {
 }
 
 type AuthorizationCode struct {
-	Code        string    `gorm:"primary_key;type:varchar(40)"`
-	RedirectUri string    `gorm:"column:redirect_uri;type:varchar(2000)"`
-	IdToken     string    `gorm:"column:id_token;type:varchar(1000)"`
-	User        User      `gorm:"references:ID"`
-	UserID      int       `gorm:"column:user_id;type:integer"`
+	Code        string `gorm:"primary_key;type:varchar(40)"`
+	RedirectUri string `gorm:"column:redirect_uri;type:varchar(2000)"`
+	IdToken     string `gorm:"column:id_token;type:varchar(1000)"`
+	User        User   `gorm:"references:ID"`
+	UserID      sql.NullInt32
 	ClientID    string    `gorm:"column:client_id;type:varchar(36);not null"`
 	Client      Client    `gorm:"references:ID"`
 	Expires     time.Time `gorm:"column:expires;type:timestamp;not null"`

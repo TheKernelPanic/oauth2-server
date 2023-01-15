@@ -12,10 +12,7 @@ func TokenController(context *fiber.Ctx) error {
 	var request dto.TokenRequest
 
 	if err := context.BodyParser(&request); err != nil {
-		return err
-	}
-	if request.GrantType == "" {
-		return context.Status(400).SendString("the grant type was not specified in the request")
+		return context.Status(400).Send(nil)
 	}
 	authorizationHeader := context.Get("Authorization")
 	if authorizationHeader != "" {
@@ -23,7 +20,22 @@ func TokenController(context *fiber.Ctx) error {
 	}
 	grantType, err := auth.ClientAssertion(request)
 	if err != nil {
-		return context.Status(401).SendString(err.Error())
+		return context.Status(400).JSON(err)
 	}
 	return context.Status(200).JSON(grantType.CreateAccessToken(request.Scope))
+}
+
+func AuthorizeController(context *fiber.Ctx) error {
+
+	var authorizeRequest dto.AuthorizeRequest
+
+	authorizeRequest.RedirectUri = context.Query("redirect_uri")
+	authorizeRequest.Scope = context.Query("scope")
+	authorizeRequest.State = context.Query("state")
+	authorizeRequest.ClientID = context.Query("client_id")
+	authorizeRequest.ResponseType = context.Query("response_type")
+
+	_ = auth.AuthorizeAssertion(authorizeRequest)
+
+	return context.Status(200).Send(nil)
 }

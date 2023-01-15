@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"errors"
 	"oauth2/config"
 	"oauth2/dto"
+	"oauth2/error_handling"
 	"oauth2/repository"
 	"oauth2/util"
 )
@@ -50,14 +50,14 @@ func (grantType *PasswordGrantType) GetIdentifier() string {
 }
 func (grantType *PasswordGrantType) ValidateRequest(request dto.TokenRequest) error {
 	if request.Username == "" || request.Password == "" {
-		return errors.New("missing parameters: \"username\" and \"password\" required")
+		return error_handling.ErrorHandler("invalid_request", "Missing parameters: 'username' and 'password' required", "")
 	}
 	user, err := repository.FindUserByUsername(request.Username)
 	if err != nil {
-		return errors.New("invalid username and password combination")
+		return error_handling.ErrorHandler("invalid_grant", "Invalid username and password combination", "")
 	}
 	if passwordVerification := util.PasswordVerify(user.Password, request.Password); passwordVerification == false {
-		return errors.New("invalid username and password combination")
+		return error_handling.ErrorHandler("invalid_grant", "Invalid username and password combination", "")
 	}
 	grantType.User = user
 	return nil
@@ -72,10 +72,11 @@ func (grantType *PasswordGrantType) CreateAccessToken(scopeRequested string) dto
 
 	if config.IncludeRefreshToken {
 		accessTokenResponse.RefreshToken = util.GenerateToken()
-		repository.PersistRefreshToken(
+		repository.PersistRefreshTokenWithUser(
 			accessTokenResponse.RefreshToken,
 			accessTokenResponse.Scope,
 			grantType.Client,
+			grantType.User,
 			config.RefreshTokenLifeTime)
 	}
 
@@ -99,20 +100,20 @@ func (grantType *AuthorizationCodeGrantType) GetIdentifier() string {
 }
 func (grantType *AuthorizationCodeGrantType) ValidateRequest(request dto.TokenRequest) error {
 	if request.Code == "" {
-		return errors.New("missing parameter: \"code\" is required")
+		return error_handling.ErrorHandler("invalid_grant", "Missing parameter: 'code' is required", "")
 	}
 	authorizationCode, err := repository.FindAuthorizationCode(request.Code)
 	if err != nil {
-		return errors.New("authorization code doesn't exist or is invalid for the client")
+		return error_handling.ErrorHandler("invalid_grant", "authorization code doesn't exist or is invalid for the client", "")
 	}
 	if authorizationCode.Client.ID != grantType.Client.ID {
-		return errors.New("authorization code doesn't exist or is invalid for the client")
+		return error_handling.ErrorHandler("invalid_grant", "authorization code doesn't exist or is invalid for the client", "")
 	}
 	if request.RedirectUri == "" || request.RedirectUri != authorizationCode.RedirectUri {
-		return errors.New("the redirect URI is missing or do not match")
+		return error_handling.ErrorHandler("redirect_uri_mismatch", "The redirect URI is missing or do not match", "")
 	}
 	if util.CheckDateIsExpired(&authorizationCode.Expires) {
-		return errors.New("the authorization code has expired")
+		return error_handling.ErrorHandler("invalid_grant", "The authorization code has expired", "")
 	}
 	grantType.AuthorizationCode = authorizationCode
 	return nil
@@ -157,15 +158,15 @@ func (grantType *RefreshTokenGrantType) GetIdentifier() string {
 func (grantType *RefreshTokenGrantType) ValidateRequest(request dto.TokenRequest) error {
 
 	if request.RefreshToken == "" {
-		return errors.New("missing parameter: \"refresh_token\" is required")
+		return error_handling.ErrorHandler("invalid_grant", "Missing parameter: 'refresh_token' is required", "")
 	}
 	refreshToken, err := repository.FindRefreshToken(request.RefreshToken)
 	if err != nil {
-		return errors.New("invalid refresh token")
+		return error_handling.ErrorHandler("invalid_grant", "Invalid refresh token", "")
 	}
 	if config.RefreshTokenLifeTime != 0 {
 		if util.CheckDateIsExpired(refreshToken.Expires) {
-			return errors.New("refresh token has expired")
+			return error_handling.ErrorHandler("invalid_grant", "Refresh token has expired", "")
 		}
 	}
 	grantType.RefreshToken = refreshToken
@@ -209,10 +210,6 @@ func (grantType *JwtBearerGrantType) GetIdentifier() string {
 	return config.GrantTypeJwtBearer
 }
 func (grantType *JwtBearerGrantType) ValidateRequest(request dto.TokenRequest) error {
-
-	if request.Assertion == "" {
-		return errors.New("Missing parameters: \"assertion\" required")
-	}
 
 	return nil
 }

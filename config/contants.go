@@ -9,6 +9,11 @@ const (
 )
 
 const (
+	ResponseTypeCode     = "code"
+	ResponseTypeImplicit = "implicit"
+)
+
+const (
 	AccessTokenLifeTime                     = 3600
 	AllowPublicClients                      = false
 	PasswordHashDefaultCost                 = 10
@@ -16,4 +21,8 @@ const (
 	IncludeRefreshToken                     = true
 	ExpireRefreshTokenAutomaticallyAfterUse = true
 	AlwaysIssueNewRefreshToken              = true
+	EnforceSate                             = true
+	AllowImplicit                           = false
+	RequireExactRedirectUri                 = true
+	RedirectStatusCode                      = 302
 )

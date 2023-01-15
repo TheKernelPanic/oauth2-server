@@ -7,7 +7,7 @@ import (
 
 func PersistAccessToken(token string, scope string, client Client, expiresIn int32) {
 
-	databaseConnection.Model(&AccessToken{}).Create(&AccessToken{
+	databaseConnection.Model(&AccessToken{}).Omit("User").Create(&AccessToken{
 		Client:  client,
 		Scope:   scope,
 		Token:   token,
@@ -31,6 +31,23 @@ func PersistRefreshToken(token string, scope string, client Client, expiresIn in
 	refreshToken := RefreshToken{
 		Client: client,
 		Scope:  scope,
+		Token:  token}
+
+	if expiresIn != 0 {
+
+		expires := time.Now().Add(time.Duration(expiresIn) * time.Second)
+
+		refreshToken.Expires = &expires
+	}
+	databaseConnection.Model(&RefreshToken{}).Omit("User").Create(&refreshToken)
+}
+
+func PersistRefreshTokenWithUser(token string, scope string, client Client, user User, expiresIn int32) {
+
+	refreshToken := RefreshToken{
+		Client: client,
+		Scope:  scope,
+		User:   user,
 		Token:  token}
 
 	if expiresIn != 0 {
