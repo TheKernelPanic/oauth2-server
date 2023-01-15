@@ -25,4 +25,7 @@ const (
 	AllowImplicit                           = false
 	RequireExactRedirectUri                 = true
 	RedirectStatusCode                      = 302
+	AuthCodeLifeTime                        = 30
+	EnforceRedirect                         = false
+	EnforceState                            = false
 )

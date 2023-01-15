@@ -3,6 +3,7 @@ package http
 import (
 	"github.com/gofiber/fiber/v2"
 	"oauth2/auth"
+	"oauth2/config"
 	"oauth2/dto"
 	"oauth2/util"
 )
@@ -37,5 +38,5 @@ func AuthorizeController(context *fiber.Ctx) error {
 
 	_ = auth.AuthorizeAssertion(authorizeRequest)
 
-	return context.Status(200).Send(nil)
+	return context.Status(config.RedirectStatusCode).Redirect("")
 }

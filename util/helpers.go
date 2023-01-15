@@ -22,6 +22,10 @@ func GenerateToken() string {
 	return hex.EncodeToString(bytes)
 }
 
+func GenerateAuthorizationCode() string {
+	return GenerateToken()
+}
+
 func DecodeHeaderCredentials(header string) (clientID string, clientSecret string) {
 
 	parts := strings.Split(header, " ")

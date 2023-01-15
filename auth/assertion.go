@@ -64,24 +64,21 @@ func AuthorizeAssertion(request dto.AuthorizeRequest) error {
 	if err != nil {
 		return error_handling.ErrorHandler("invalid_client", "The client id supplied is invalid", "")
 	}
-	// registeredRedirectUri := client.RedirectUri
 
-	if request.ResponseType == "" {
-		return errors.New("invalid or missing response type")
+	if request.ResponseType == "" || !validateResponseType(request.ResponseType) {
+		return error_handling.ErrorHandler("invalid_request", "Invalid or missing response type", "")
 	}
-	if !validateResponseType(request.ResponseType) {
-
-		return errors.New(fmt.Sprintf("%s response type not supported", request.ResponseType))
-	}
-
-	// TODO: Response type
-
-	// TODO: Validate client has authorization_code grant_type (only for response type code)y
 	if !validateGrantType(client, config.GrantTypeAuthorizationCode) {
 		return error_handling.ErrorHandler("unauthorized_client", "The grant type is unauthorized for this client_id", "")
 	}
 
+	// TODO: Redirect uri
+
 	// TODO: Handle scopes
+
+	if config.EnforceSate && request.State == "" {
+		return error_handling.ErrorHandler("invalid_request", "The state parameter is required", "")
+	}
 
 	return nil
 }
