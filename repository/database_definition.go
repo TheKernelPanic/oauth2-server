@@ -21,7 +21,7 @@ func (Client) TableName() string {
 type ClientGrantType struct {
 	ID        uint   `gorm:"primary_key;column:id;type:integer"`
 	ClientID  string `gorm:"type:varchar(36);index:composite,unique;not null"`
-	GrantType string `gorm:"type:varchar(28);index:composite,unique;column:grant_type"`
+	GrantType string `gorm:"type:varchar(64);index:composite,unique;column:grant_type"`
 }
 
 func (ClientGrantType) TableName() string {

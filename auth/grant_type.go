@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"github.com/golang-jwt/jwt/v4"
 	"oauth2/config"
 	"oauth2/dto"
 	"oauth2/error_handling"
@@ -23,6 +24,9 @@ func getGrantType(client repository.Client, grantTypeRequested string) (GrantTyp
 	}
 	if grantTypeRequested == config.GrantTypeRefreshToken {
 		return &RefreshTokenGrantType{Client: client}, nil
+	}
+	if grantTypeRequested == config.GrantTypeJwtBearer {
+		return &JwtBearerGrantType{}, nil
 	}
 	return nil, errors.New(fmt.Sprintf("Grant type \"%s\" not supported", grantTypeRequested))
 }
@@ -230,6 +234,27 @@ func (grantType *JwtBearerGrantType) GetIdentifier() string {
 }
 func (grantType *JwtBearerGrantType) ValidateRequest(request dto.TokenRequest) error {
 
+	_, err := jwt.Parse(request.Assertion, func(token *jwt.Token) (interface{}, error) {
+
+		claims := token.Claims.(jwt.MapClaims)
+		clientId := claims["iss"].(string)
+
+		jwtClient, err := repository.FindJwtByClientId(clientId)
+		if err != nil {
+			return nil, error_handling.ErrorHandler("invalid_request", "Invalid issuer (iss) provided", "")
+		}
+		rsaPublicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(jwtClient.PublicKey))
+		if err != nil {
+			return nil, error_handling.ErrorHandler("invalid_request", "JWT is malformed", "")
+		}
+
+		// TODO: Check sub, exp, nbf, aud, jti
+
+		return rsaPublicKey, nil
+	})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 func (grantType *JwtBearerGrantType) CreateAccessToken(scopeRequested string) dto.AccessTokenResponse {
