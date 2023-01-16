@@ -7,9 +7,3 @@ type AuthorizeRequest struct {
 	ResponseType string
 	Scope        string
 }
-
-type RedirectResponse struct {
-	StatusCode uint16
-	Uri        string
-	State      string
-}

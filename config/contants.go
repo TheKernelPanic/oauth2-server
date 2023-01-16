@@ -5,6 +5,7 @@ const (
 	GrantTypePassword          = "password"
 	GrantTypeAuthorizationCode = "authorization_code"
 	GrantTypeRefreshToken      = "refresh_token"
+	GrantTypeImplicit          = "implicit"
 	GrantTypeJwtBearer         = "urn:ietf:params:oauth:grant-type:jwt-bearer"
 )
 
@@ -21,11 +22,11 @@ const (
 	IncludeRefreshToken                     = true
 	ExpireRefreshTokenAutomaticallyAfterUse = true
 	AlwaysIssueNewRefreshToken              = true
-	EnforceSate                             = true
 	AllowImplicit                           = false
 	RequireExactRedirectUri                 = true
 	RedirectStatusCode                      = 302
 	AuthCodeLifeTime                        = 30
-	EnforceRedirect                         = false
+	AuthorizationCodeEnforceRedirect        = false
 	EnforceState                            = false
+	RfcDocsRefUrl                           = "https://www.rfc-editor.org/rfc/rfc6749"
 )

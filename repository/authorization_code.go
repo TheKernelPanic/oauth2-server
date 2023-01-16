@@ -15,6 +15,17 @@ func PersistAuthorizationCode(code string, client Client, scope string, expiresI
 	})
 }
 
+func PersistAuthorizationCodeWithUser(code string, client Client, user User, scope string, expiresIn int32) {
+
+	databaseConnection.Model(&AuthorizationCode{}).Create(&AuthorizationCode{
+		Client:  client,
+		Scope:   scope,
+		Code:    code,
+		User:    user,
+		Expires: time.Now().Add(time.Duration(expiresIn) * time.Second),
+	})
+}
+
 func FindAuthorizationCode(code string) (AuthorizationCode, error) {
 
 	var authorizationCode AuthorizationCode

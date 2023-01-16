@@ -31,6 +31,7 @@ func main() {
 	oAuthGroup := appServer.Group("/oauth/v2")
 	oAuthGroup.Post("/token", http.TokenController)
 	oAuthGroup.Get("/authorize", http.AuthorizeController)
+	oAuthGroup.Post("/revoke", http.RevokeController)
 
 	err = appServer.Listen(fmt.Sprintf("%s:%s", os.Getenv("APPLICATION_HOST"), os.Getenv("APPLICATION_PORT")))
 	if err != nil {

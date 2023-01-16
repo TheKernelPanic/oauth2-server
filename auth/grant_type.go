@@ -1,12 +1,31 @@
 package auth
 
 import (
+	"errors"
+	"fmt"
 	"oauth2/config"
 	"oauth2/dto"
 	"oauth2/error_handling"
 	"oauth2/repository"
 	"oauth2/util"
 )
+
+func getGrantType(client repository.Client, grantTypeRequested string) (GrantType, error) {
+
+	if grantTypeRequested == config.GrantTypeClientCredentials {
+		return &ClientCredentialsGrantType{Client: client}, nil
+	}
+	if grantTypeRequested == config.GrantTypePassword {
+		return &PasswordGrantType{Client: client}, nil
+	}
+	if grantTypeRequested == config.GrantTypeAuthorizationCode {
+		return &AuthorizationCodeGrantType{Client: client}, nil
+	}
+	if grantTypeRequested == config.GrantTypeRefreshToken {
+		return &RefreshTokenGrantType{Client: client}, nil
+	}
+	return nil, errors.New(fmt.Sprintf("Grant type \"%s\" not supported", grantTypeRequested))
+}
 
 type GrantType interface {
 	GetIdentifier() string
