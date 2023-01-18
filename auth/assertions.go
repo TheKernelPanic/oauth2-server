@@ -6,6 +6,7 @@ import (
 	"oauth2/dto"
 	"oauth2/error_handling"
 	"oauth2/repository"
+	"oauth2/util"
 	"strings"
 )
 
@@ -14,26 +15,11 @@ func TokenRequestAssertion(request dto.TokenRequest) (GrantType, error) {
 	if request.GrantType == "" {
 		return nil, error_handling.ErrorHandler("invalid_request", "The grant type was not specified in the request", "")
 	}
-	if request.ClientID == "" {
-		return nil, error_handling.ErrorHandler("invalid_client", "", "No client id supplied")
-	}
-	client, err := repository.FindClientById(request.ClientID)
+	grantType, err := getGrantType(request)
 	if err != nil {
-		return nil, error_handling.ErrorHandler("invalid_client", "", "The client id supplied is invalid")
+		return nil, error_handling.ErrorHandler("unsupported_grant_type", err.Error(), "")
 	}
-	if (client.Secret != request.ClientSecret) && !config.AllowPublicClients {
-		return nil, error_handling.ErrorHandler("invalid_client", "The client credentials are invalid", "")
-	}
-	if !validateGrantType(client, request.GrantType) {
-		return nil, error_handling.ErrorHandler("unauthorized_client", "The grant type is unauthorized for this client_id", "")
-	}
-	
-	// TODO: Check scope
-	grantType, err := getGrantType(client, request.GrantType)
-	if err != nil {
-		return nil, err
-	}
-	if err := grantType.ValidateRequest(request); err != nil {
+	if err := grantType.Assert(request); err != nil {
 		return nil, err
 	}
 	return grantType, nil
@@ -50,16 +36,14 @@ func AuthorizeRequestAssertion(request dto.AuthorizeRequest) (ResponseType, erro
 	}
 
 	// Redirect URI
-	var redirectUri string
 	if request.RedirectUri != "" {
 		urlParsed, _ := url.Parse(request.RedirectUri)
 		if urlParsed.Fragment != "" {
 			return nil, error_handling.ErrorHandler("invalid_uri", "The redirect URI must not contain a fragment'", "")
 		}
-		if client.RedirectUri != "" && !validateRedirectUri(client.RedirectUri, request.RedirectUri) {
+		if client.RedirectUri != "" && !assertRedirectUri(client.RedirectUri, request.RedirectUri) {
 			return nil, error_handling.ErrorHandler("redirect_uri_mismatch", "The redirect URI provided is missing or does not match", "#section-3.1.2")
 		}
-		redirectUri = request.RedirectUri
 	} else {
 
 		if client.RedirectUri == "" {
@@ -68,18 +52,18 @@ func AuthorizeRequestAssertion(request dto.AuthorizeRequest) (ResponseType, erro
 		if len(strings.Split(client.RedirectUri, " ")) > 1 {
 			return nil, error_handling.ErrorHandler("invalid_uri", "A redirect URI must be supplied when multiple redirect URIs are registered", "#section-3.1.2.3")
 		}
-		redirectUri = client.RedirectUri
+		request.RedirectUri = client.RedirectUri
 	}
 
 	// Response Type
-	if request.ResponseType == "" || !validateResponseType(request.ResponseType) {
+	if request.ResponseType == "" || !assertResponseType(request.ResponseType) {
 		return nil, error_handling.ErrorHandler("invalid_request", "Invalid or missing response type", "")
 	}
 	if request.ResponseType == config.ResponseTypeCode {
-		if !validateGrantType(client, config.GrantTypeAuthorizationCode) {
+		if !assertClientGrantType(client, config.GrantTypeAuthorizationCode) {
 			return nil, error_handling.ErrorHandler("unauthorized_client", "The grant type is unauthorized for this client_id", "")
 		}
-		if config.AuthorizationCodeEnforceRedirect && redirectUri == "" {
+		if config.AuthorizationCodeEnforceRedirect && request.RedirectUri == "" {
 			return nil, error_handling.ErrorHandler("redirect_uri_mismatch", "The redirect URI is mandatory and was not supplied", "")
 		}
 	} else {
@@ -87,22 +71,104 @@ func AuthorizeRequestAssertion(request dto.AuthorizeRequest) (ResponseType, erro
 		if !config.AllowImplicit {
 			return nil, error_handling.ErrorHandler("unsupported_response_type", "implicit grant type not supported", "")
 		}
-		if !validateGrantType(client, config.GrantTypeImplicit) {
+		if !assertClientGrantType(client, config.GrantTypeImplicit) {
 			return nil, error_handling.ErrorHandler("unauthorized_client", "The grant type is unauthorized for this client_id", "")
 		}
 	}
 
-	// Scope TODO
-	if request.Scope != "" {
-
-	} else {
-
-	}
+	// Scope
 
 	// State
 	if config.EnforceState && request.State == "" {
 		return nil, error_handling.ErrorHandler("invalid_request", "The state parameter is required", "")
 	}
 
-	return getResponseType(client, request.ResponseType)
+	return getResponseType(client, request)
+}
+
+func assertClient(request dto.TokenRequest) (repository.Client, error) {
+
+	var client repository.Client
+
+	if !config.AllowCredentialsInRequestBody && request.ClientID != "" {
+		return client, error_handling.ErrorHandler("invalid_request", "Client credentials must be included thought HTTP Basic authentication scheme", "")
+	}
+	if config.AllowCredentialsInRequestBody && request.ClientID == "" {
+		request.ClientID, request.ClientSecret = util.DecodeHeaderCredentials(request.AuthorizationHeader)
+	}
+	if request.ClientID == "" {
+		return client, error_handling.ErrorHandler("invalid_client", "No client id supplied", "")
+	}
+	client, err := repository.FindClientById(request.ClientID)
+	if err != nil {
+		return client, error_handling.ErrorHandler("invalid_client", "The client id supplied is invalid", "")
+	}
+	if (client.Secret != request.ClientSecret) && !config.AllowPublicClients {
+		return client, error_handling.ErrorHandler("invalid_client", "The client credentials are invalid", "")
+	}
+	if !assertClientGrantType(client, request.GrantType) {
+		return client, error_handling.ErrorHandler("unauthorized_client", "The grant type is unauthorized for this client_id", "")
+	}
+	return client, nil
+}
+
+func assertScope(request *dto.TokenRequest, client *repository.Client) error {
+
+	if request.Scope != "" {
+
+		result, _ := util.CompareScopes(client.Scope, request.Scope)
+
+		if !result {
+			return error_handling.ErrorHandler("invalid_scope", "The scope requested is invalid for this request", "")
+		}
+
+	} else if client.Scope != "" {
+		request.Scope = client.Scope
+	} else {
+		scopeDefaultList, err := repository.FindDefaultScope()
+		if err != nil {
+			return error_handling.ErrorHandler("invalid_scope", "This application requires you specify a scope parameter", "")
+		}
+		request.Scope = util.NormalizeScopeList(scopeDefaultList)
+	}
+	return nil
+}
+
+func assertResponseType(responseTypeRequested string) bool {
+
+	for _, allowed := range []string{config.ResponseTypeCode, config.ResponseTypeImplicit} {
+		if responseTypeRequested == allowed {
+			return true
+		}
+	}
+	return false
+}
+
+func assertClientGrantType(client repository.Client, grantType string) bool {
+	for _, grantTypeAllowed := range client.GrantType {
+		if grantTypeAllowed.GrantType == grantType {
+			return true
+		}
+	}
+	return false
+}
+
+// Internal method for validating redirect URI supplied
+// see http://tools.ietf.org/html/rfc6749#section-3.1.2
+func assertRedirectUri(clientUri string, requestedUri string) bool {
+
+	registeredUris := strings.Split(clientUri, " ")
+	for _, registeredUri := range registeredUris {
+		if config.RequireExactRedirectUri {
+			if strings.Compare(registeredUri, requestedUri) == 0 {
+				return true
+			}
+		} else {
+			requestedUriSubstr := requestedUri[0:len(registeredUri)]
+			if strings.Compare(requestedUriSubstr, registeredUri) == 0 {
+				return true
+			}
+		}
+	}
+	return false
 }

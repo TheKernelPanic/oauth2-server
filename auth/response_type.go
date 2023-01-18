@@ -4,18 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"oauth2/config"
+	"oauth2/dto"
 	"oauth2/repository"
 	"oauth2/util"
 )
 
-func getResponseType(client repository.Client, responseTypeRequested string) (ResponseType, error) {
-	if responseTypeRequested == config.ResponseTypeCode {
-		return &ResponseTypeCode{Client: client}, nil
+func getResponseType(client repository.Client, currentRequest dto.AuthorizeRequest) (ResponseType, error) {
+	if currentRequest.ResponseType == config.ResponseTypeCode {
+		return &ResponseTypeCode{Client: client, CurrentRequest: currentRequest}, nil
 	}
-	if responseTypeRequested == config.ResponseTypeImplicit {
-		return &ResponseTypeImplicit{Client: client}, nil
+	if currentRequest.ResponseType == config.ResponseTypeImplicit {
+		return &ResponseTypeImplicit{Client: client, CurrentRequest: currentRequest}, nil
 	}
-	return nil, errors.New(fmt.Sprintf("Response type \"%s\" not supported", responseTypeRequested))
+	return nil, errors.New(fmt.Sprintf("Response type \"%s\" not supported", currentRequest.ResponseType))
 }
 
 type ResponseType interface {
@@ -23,27 +24,33 @@ type ResponseType interface {
 }
 
 type ResponseTypeCode struct {
-	User        repository.User
-	Client      repository.Client
-	State       string
-	Scope       string
-	RedirectUri string
+	User           repository.User
+	Client         repository.Client
+	CurrentRequest dto.AuthorizeRequest
 }
 
 type ResponseTypeImplicit struct {
-	Client repository.Client
-	State  string
-	Scope  string
+	Client         repository.Client
+	User           repository.User
+	CurrentRequest dto.AuthorizeRequest
 }
 
 func (responseType *ResponseTypeCode) GetUri() string {
 
 	code := util.GenerateAuthorizationCode()
 
-	repository.PersistAuthorizationCode(code, responseType.Client, responseType.Scope, config.AuthCodeLifeTime)
+	repository.PersistAuthorizationCode(
+		code,
+		responseType.Client,
+		responseType.CurrentRequest.Scope,
+		responseType.CurrentRequest.RedirectUri,
+		config.AuthCodeLifeTime)
 
-	// TODO
-	return ""
+	return util.BuildUrlAuthorizationCode(
+		responseType.CurrentRequest.RedirectUri,
+		responseType.CurrentRequest.Scope,
+		responseType.CurrentRequest.State,
+		code)
 }
 
 func (responseType *ResponseTypeImplicit) GetUri() string {
@@ -52,9 +59,13 @@ func (responseType *ResponseTypeImplicit) GetUri() string {
 
 	repository.PersistAccessToken(
 		accessToken,
-		responseType.Scope,
+		responseType.CurrentRequest.Scope,
 		responseType.Client,
 		config.AccessTokenLifeTime)
 
-	return ""
+	return util.BuildUrlAuthorizationImplicit(
+		responseType.CurrentRequest.RedirectUri,
+		responseType.CurrentRequest.Scope,
+		responseType.CurrentRequest.State,
+		accessToken)
 }

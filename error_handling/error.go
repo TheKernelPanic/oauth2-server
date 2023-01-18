@@ -17,5 +17,5 @@ func ErrorHandler(error string, description string, uri string) AuthError {
 }
 
 func (e AuthError) Error() string {
-	return e.Err
+	return e.ErrorDescription
 }

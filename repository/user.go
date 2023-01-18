@@ -11,6 +11,5 @@ func FindUserByUsername(username string) (User, error) {
 	if user.Username == "" {
 		return user, errors.New("user not found")
 	}
-
 	return user, nil
 }

@@ -29,7 +29,8 @@ func InitDatabaseConnection(host string, user string, password string, database 
 		&User{},
 		&RefreshToken{},
 		&AuthorizationCode{},
-		&Jwt{},
+		&JwtConfig{},
+		&Scope{},
 		&AccessToken{})
 
 	if err != nil {

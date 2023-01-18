@@ -13,20 +13,26 @@ type AccessTokenResponse struct {
 }
 
 type TokenRequest struct {
-	ClientID     string `form:"client_id"`
-	ClientSecret string `form:"client_secret"`
-	GrantType    string `form:"grant_type"`
-	Scope        string `form:"scope"`
-	Username     string `form:"username"`
-	Password     string `form:"password"`
-	RedirectUri  string `form:"redirect_uri"`
-	Code         string `form:"code"`
-	State        string `form:"state"`
-	RefreshToken string `form:"refresh_token"`
-	Assertion    string `form:"assertion"`
+	ClientID            string `form:"client_id"`
+	ClientSecret        string `form:"client_secret"`
+	GrantType           string `form:"grant_type"`
+	Scope               string `form:"scope"`
+	Username            string `form:"username"`
+	Password            string `form:"password"`
+	RedirectUri         string `form:"redirect_uri"`
+	Code                string `form:"code"`
+	State               string `form:"state"`
+	RefreshToken        string `form:"refresh_token"`
+	Assertion           string `form:"assertion"`
+	AuthorizationHeader string
 }
 
 type JwtParams struct {
 	jwt.RegisteredClaims
 	Scope string `json:"scope,omitempty"`
+}
+
+type RevokeTokenRequest struct {
+	TokenTypeHint string `form:"token_type_hint"`
+	Token         string `form:"token"`
 }

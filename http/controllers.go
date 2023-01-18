@@ -5,9 +5,9 @@ import (
 	"oauth2/auth"
 	"oauth2/config"
 	"oauth2/dto"
-	"oauth2/util"
 )
 
+// TokenController Handle new access token request
 func TokenController(context *fiber.Ctx) error {
 
 	var request dto.TokenRequest
@@ -15,17 +15,15 @@ func TokenController(context *fiber.Ctx) error {
 	if err := context.BodyParser(&request); err != nil {
 		return context.Status(400).Send(nil)
 	}
-	authorizationHeader := context.Get("Authorization")
-	if authorizationHeader != "" {
-		request.ClientID, request.ClientSecret = util.DecodeHeaderCredentials(authorizationHeader)
-	}
+	request.AuthorizationHeader = context.Get("Authorization")
 	grantType, err := auth.TokenRequestAssertion(request)
 	if err != nil {
 		return context.Status(400).JSON(err)
 	}
-	return context.Status(200).JSON(grantType.CreateAccessToken(request.Scope))
+	return context.Status(200).JSON(grantType.GetAccessToken())
 }
 
+// AuthorizeController Handle authorization request
 func AuthorizeController(context *fiber.Ctx) error {
 
 	var authorizeRequest dto.AuthorizeRequest
@@ -41,14 +39,20 @@ func AuthorizeController(context *fiber.Ctx) error {
 		return context.Status(400).JSON(err)
 	}
 
-	// TODO: Handle is_authorized
-	// TODO: Handle user
 	return context.Status(config.RedirectStatusCode).Redirect(responseType.GetUri())
 }
 
+// RevokeController Handle revoke token request
 func RevokeController(context *fiber.Ctx) error {
 
-	// TODO: Implement
+	var request dto.RevokeTokenRequest
 
+	if err := context.BodyParser(&request); err != nil {
+		return context.Status(400).Send(nil)
+	}
+	err := auth.RevokeToken(request)
+	if err != nil {
+		return context.Status(400).JSON(err)
+	}
 	return context.Status(200).Send(nil)
 }

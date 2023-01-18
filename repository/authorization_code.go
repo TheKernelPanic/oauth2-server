@@ -5,24 +5,14 @@ import (
 	"time"
 )
 
-func PersistAuthorizationCode(code string, client Client, scope string, expiresIn int32) {
+func PersistAuthorizationCode(code string, client Client, scope string, redirectUri string, expiresIn int32) {
 
-	databaseConnection.Model(&AuthorizationCode{}).Create(&AuthorizationCode{
-		Client:  client,
-		Scope:   scope,
-		Code:    code,
-		Expires: time.Now().Add(time.Duration(expiresIn) * time.Second),
-	})
-}
-
-func PersistAuthorizationCodeWithUser(code string, client Client, user User, scope string, expiresIn int32) {
-
-	databaseConnection.Model(&AuthorizationCode{}).Create(&AuthorizationCode{
-		Client:  client,
-		Scope:   scope,
-		Code:    code,
-		User:    user,
-		Expires: time.Now().Add(time.Duration(expiresIn) * time.Second),
+	databaseConnection.Model(&AuthorizationCode{}).Omit("Client", "User").Create(&AuthorizationCode{
+		ClientID:    client.ID,
+		Scope:       scope,
+		Code:        code,
+		RedirectUri: redirectUri,
+		Expires:     time.Now().Add(time.Duration(expiresIn) * time.Second),
 	})
 }
 
