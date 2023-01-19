@@ -36,3 +36,9 @@ type RevokeTokenRequest struct {
 	TokenTypeHint string `form:"token_type_hint"`
 	Token         string `form:"token"`
 }
+
+type IntrospectRequest struct {
+	Token        string `form:"token"`
+	ClientID     string `form:"client_id"`
+	ClientSecret string `form:"client_secret"`
+}

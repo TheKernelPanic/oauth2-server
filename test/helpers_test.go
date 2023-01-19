@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+// TestGenerateToken GenerateToken
 func TestGenerateToken(t *testing.T) {
 
 	token := util.GenerateToken()
@@ -17,6 +18,7 @@ func TestGenerateToken(t *testing.T) {
 	}
 }
 
+// TestDecodeHeaderCredentials DecodeHeaderCredentials
 func TestDecodeHeaderCredentials(t *testing.T) {
 
 	clientIdExpected := "id"
@@ -34,6 +36,7 @@ func TestDecodeHeaderCredentials(t *testing.T) {
 	}
 }
 
+// TestCompareScopes TestCompareScopes
 func TestCompareScopes(t *testing.T) {
 	current := "read"
 	available := "read write"
@@ -44,6 +47,7 @@ func TestCompareScopes(t *testing.T) {
 	}
 }
 
+// TestNormalizeScopeList TestNormalizeScopeList
 func TestNormalizeScopeList(t *testing.T) {
 
 	var scopeList []repository.Scope

@@ -38,7 +38,7 @@ const (
 	AllowImplicit = true
 
 	// JwtAudienceUri Audience uri of oauth server
-	JwtAudienceUri = "localhost:3000/oauth/v2/token"
+	JwtAudienceUri = "http://localhost:3000"
 
 	// PasswordHashDefaultCost For bcrypt algorithm
 	PasswordHashDefaultCost = 10

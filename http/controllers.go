@@ -56,3 +56,9 @@ func RevokeController(context *fiber.Ctx) error {
 	}
 	return context.Status(200).Send(nil)
 }
+
+// IntrospectController Respond with token data
+func IntrospectController(context *fiber.Ctx) error {
+
+	return context.Status(200).Send(nil)
+}
