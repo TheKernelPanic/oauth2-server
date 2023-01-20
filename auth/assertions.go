@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// TokenRequestAssertion Check /token request
 func TokenRequestAssertion(request dto.TokenRequest) (GrantType, error) {
 
 	if request.GrantType == "" {
@@ -25,6 +26,7 @@ func TokenRequestAssertion(request dto.TokenRequest) (GrantType, error) {
 	return grantType, nil
 }
 
+// AuthorizeRequestAssertion Check /authorize request
 func AuthorizeRequestAssertion(request dto.AuthorizeRequest) (ResponseType, error) {
 
 	if request.ClientID == "" {
@@ -35,7 +37,6 @@ func AuthorizeRequestAssertion(request dto.AuthorizeRequest) (ResponseType, erro
 		return nil, error_handling.ErrorHandler("invalid_client", "The client id supplied is invalid", "")
 	}
 
-	// Redirect URI
 	if request.RedirectUri != "" {
 		urlParsed, _ := url.Parse(request.RedirectUri)
 		if urlParsed.Fragment != "" {
@@ -55,7 +56,6 @@ func AuthorizeRequestAssertion(request dto.AuthorizeRequest) (ResponseType, erro
 		request.RedirectUri = client.RedirectUri
 	}
 
-	// Response Type
 	if request.ResponseType == "" || !assertResponseType(request.ResponseType) {
 		return nil, error_handling.ErrorHandler("invalid_request", "Invalid or missing response type", "")
 	}
@@ -76,16 +76,18 @@ func AuthorizeRequestAssertion(request dto.AuthorizeRequest) (ResponseType, erro
 		}
 	}
 
-	// Scope
+	request.Scope, err = assertScope(request.Scope, client.Scope)
+	if err != nil {
+		return nil, err
+	}
 
-	// State
 	if config.EnforceState && request.State == "" {
 		return nil, error_handling.ErrorHandler("invalid_request", "The state parameter is required", "")
 	}
-
 	return getResponseType(client, request)
 }
 
+// assertClient Check client credentials against DB
 func assertClient(request dto.TokenRequest) (repository.Client, error) {
 
 	var client repository.Client
@@ -112,28 +114,30 @@ func assertClient(request dto.TokenRequest) (repository.Client, error) {
 	return client, nil
 }
 
-func assertScope(request *dto.TokenRequest, client *repository.Client) error {
+// assertScope Compare the scopes of the request with the scopes of the client
+func assertScope(requestedScope string, clientScope string) (string, error) {
 
-	if request.Scope != "" {
+	if requestedScope != "" {
 
-		result, _ := util.CompareScopes(client.Scope, request.Scope)
+		result, _ := util.CompareScopes(clientScope, requestedScope)
 
 		if !result {
-			return error_handling.ErrorHandler("invalid_scope", "The scope requested is invalid for this request", "")
+			return "", error_handling.ErrorHandler("invalid_scope", "The scope requested is invalid for this request", "")
 		}
 
-	} else if client.Scope != "" {
-		request.Scope = client.Scope
+	} else if clientScope != "" {
+		return clientScope, nil
 	} else {
 		scopeDefaultList, err := repository.FindDefaultScope()
 		if err != nil {
-			return error_handling.ErrorHandler("invalid_scope", "This application requires you specify a scope parameter", "")
+			return "", error_handling.ErrorHandler("invalid_scope", "This application requires you specify a scope parameter", "")
 		}
-		request.Scope = util.NormalizeScopeList(scopeDefaultList)
+		return util.NormalizeScopeList(scopeDefaultList), nil
 	}
-	return nil
+	return requestedScope, nil
 }
 
+// assertResponseType Check that the response type is supported
 func assertResponseType(responseTypeRequested string) bool {
 
 	for _, allowed := range []string{config.ResponseTypeCode, config.ResponseTypeImplicit} {
@@ -144,6 +148,7 @@ func assertResponseType(responseTypeRequested string) bool {
 	return false
 }
 
+// assertClientGrantType Check the grant type of the request is enabled for the client
 func assertClientGrantType(client repository.Client, grantType string) bool {
 	for _, grantTypeAllowed := range client.GrantType {
 		if grantTypeAllowed.GrantType == grantType {

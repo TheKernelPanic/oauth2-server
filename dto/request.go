@@ -12,11 +12,19 @@ type AccessTokenResponse struct {
 	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
+type AuthorizeRequest struct {
+	RedirectUri  string
+	State        string
+	ResponseType string
+	Scope        string
+	ClientID     string
+}
+
 type TokenRequest struct {
 	ClientID            string `form:"client_id"`
+	Scope               string `form:"scope"`
 	ClientSecret        string `form:"client_secret"`
 	GrantType           string `form:"grant_type"`
-	Scope               string `form:"scope"`
 	Username            string `form:"username"`
 	Password            string `form:"password"`
 	RedirectUri         string `form:"redirect_uri"`

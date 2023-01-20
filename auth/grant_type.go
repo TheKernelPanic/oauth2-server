@@ -52,7 +52,7 @@ func (grantType *ClientCredentialsGrantType) Assert(request dto.TokenRequest) er
 		return err
 	}
 	grantType.Client = client
-	err = assertScope(&request, &client)
+	request.Scope, err = assertScope(request.Scope, client.Scope)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (grantType *PasswordGrantType) Assert(request dto.TokenRequest) error {
 		return err
 	}
 	grantType.Client = client
-	err = assertScope(&request, &client)
+	request.Scope, err = assertScope(request.Scope, client.Scope)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func (grantType *AuthorizationCodeGrantType) Assert(request dto.TokenRequest) er
 		return err
 	}
 	grantType.Client = client
-	err = assertScope(&request, &client)
+	request.Scope, err = assertScope(request.Scope, client.Scope)
 	if err != nil {
 		return err
 	}
@@ -219,7 +219,7 @@ func (grantType *RefreshTokenGrantType) Assert(request dto.TokenRequest) error {
 		return err
 	}
 	grantType.Client = client
-	err = assertScope(&request, &client)
+	request.Scope, err = assertScope(request.Scope, client.Scope)
 	if err != nil {
 		return err
 	}
@@ -354,7 +354,7 @@ func (grantType *JwtBearerGrantType) Assert(request dto.TokenRequest) error {
 	if err != nil {
 		return error_handling.ErrorHandler("invalid_grant", err.(*jwt.ValidationError).Inner.Error(), "")
 	}
-	err = assertScope(&grantType.Request, &grantType.Client)
+	request.Scope, err = assertScope(request.Scope, grantType.Client.Scope)
 	if err != nil {
 		return err
 	}
