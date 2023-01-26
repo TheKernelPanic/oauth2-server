@@ -95,7 +95,7 @@ func assertClient(request dto.TokenRequest) (repository.Client, error) {
 	if !config.AllowCredentialsInRequestBody && request.ClientID != "" {
 		return client, error_handling.ErrorHandler("invalid_request", "Client credentials must be included thought HTTP Basic authentication scheme", "")
 	}
-	if config.AllowCredentialsInRequestBody && request.ClientID == "" {
+	if request.ClientID == "" {
 		request.ClientID, request.ClientSecret = util.DecodeHeaderCredentials(request.AuthorizationHeader)
 	}
 	if request.ClientID == "" {
