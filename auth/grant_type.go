@@ -182,20 +182,10 @@ func (grantType *AuthorizationCodeGrantType) GetAccessToken() dto.AccessTokenRes
 		AccessToken: util.GenerateToken(),
 		Scope:       grantType.Request.Scope}
 
-	if config.AlwaysIssueNewRefreshToken {
-		accessTokenResponse.RefreshToken = util.GenerateToken()
-		repository.PersistRefreshToken(
-			accessTokenResponse.RefreshToken,
-			accessTokenResponse.Scope,
-			grantType.Client,
-			config.RefreshTokenLifeTime)
-	}
-
-	repository.PersistAccessTokenWithUser(
+	repository.PersistAccessToken(
 		accessTokenResponse.AccessToken,
 		accessTokenResponse.Scope,
 		grantType.Client,
-		grantType.AuthorizationCode.User,
 		config.AccessTokenLifeTime)
 
 	repository.ExpireAuthorizationCode(grantType.AuthorizationCode.Code)
