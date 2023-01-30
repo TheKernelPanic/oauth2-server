@@ -316,6 +316,7 @@ func (grantType *JwtBearerGrantType) Assert(request dto.TokenRequest) error {
 			return nil, error_handling.ErrorHandler("invalid_grant", "Invalid audience (aud)", "")
 		}
 
+		// scope
 		if claims["scope"] != nil {
 			grantType.Request.Scope = claims["scope"].(string)
 		}
@@ -344,7 +345,7 @@ func (grantType *JwtBearerGrantType) Assert(request dto.TokenRequest) error {
 	if err != nil {
 		return error_handling.ErrorHandler("invalid_grant", err.(*jwt.ValidationError).Inner.Error(), "")
 	}
-	request.Scope, err = assertScope(request.Scope, grantType.Client.Scope)
+	request.Scope, err = assertScope(grantType.Request.Scope, grantType.Client.Scope)
 	if err != nil {
 		return err
 	}
