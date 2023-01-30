@@ -50,6 +50,7 @@ func DecodeHeaderCredentials(header string) (clientID string, clientSecret strin
 	return clientID, clientSecret
 }
 
+// PasswordHash Create password hash using bcrypt, change Cost in constants.go file
 func PasswordHash(plain string) string {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(plain), config.PasswordHashDefaultCost)
@@ -59,6 +60,7 @@ func PasswordHash(plain string) string {
 	return string(hash)
 }
 
+// PasswordVerify Returns TRUE if password match
 func PasswordVerify(hash string, plain string) bool {
 
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(plain))
@@ -68,6 +70,7 @@ func PasswordVerify(hash string, plain string) bool {
 	return true
 }
 
+// CheckDateIsExpired Returns TRUE if token has been expired
 func CheckDateIsExpired(date *time.Time) bool {
 	return date.Unix() < time.Now().Unix()
 }
@@ -140,4 +143,14 @@ func CompareScopes(available string, current string) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func GetAccessTokenFromHeader(headerValue string) (string, error) {
+
+	prefix := "Bearer "
+
+	if !strings.HasPrefix(headerValue, prefix) {
+		return "", errors.New("token not found")
+	}
+	return strings.TrimPrefix(headerValue, prefix), nil
 }

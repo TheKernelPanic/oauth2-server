@@ -58,6 +58,15 @@ func TestNormalizeScopeList(t *testing.T) {
 	result := util.NormalizeScopeList(scopeList)
 
 	if result != "read write" {
-		t.Fatalf("Unespected scope normalized result: %s", result)
+		t.Fatalf("Unexpected scope normalized result: %s", result)
+	}
+}
+
+// TestGetAccessTokenFromHeader GetAccessTokenFromHeader
+func TestGetAccessTokenFromHeader(t *testing.T) {
+
+	accessToken, err := util.GetAccessTokenFromHeader("Bearer foo")
+	if accessToken != "foo" || err != nil {
+		t.Fatalf("Retrieval access token from header failed")
 	}
 }

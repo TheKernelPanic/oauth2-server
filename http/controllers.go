@@ -1,10 +1,13 @@
 package http
 
 import (
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"oauth2/auth"
 	"oauth2/config"
 	"oauth2/dto"
+	"oauth2/error_handling"
+	"oauth2/util"
 )
 
 // TokenController Handle new access token request
@@ -60,5 +63,40 @@ func RevokeController(context *fiber.Ctx) error {
 // IntrospectController Respond with token data
 func IntrospectController(context *fiber.Ctx) error {
 
-	return context.Status(200).Send(nil)
+	var token string
+
+	if context.Method() == "GET" {
+		token = context.Query("access_token")
+	}
+	if context.Method() == "POST" {
+		var request dto.IntrospectRequest
+		_ = context.BodyParser(&request)
+
+		token = request.AccessToken
+	}
+
+	accessTokenFromHeader, _ := util.GetAccessTokenFromHeader(context.Get("Authorization"))
+
+	if accessTokenFromHeader != "" {
+		token = accessTokenFromHeader
+	}
+	if token == "" {
+		// TODO: Use token type from DB?¿
+		context.Set("WWW-Authenticate", fmt.Sprintf("%s realm=\"%s\"", "Bearer", config.DefaultRealm))
+
+		return context.Status(200).Send(nil)
+	}
+
+	response, err := auth.Introspect(token)
+	if err != nil {
+		headerValue := fmt.Sprintf("%s realm=\"%s\", error=\"%s\"", "Bearer", config.DefaultRealm, err.(error_handling.AuthError).Err)
+
+		if err.(error_handling.AuthError).ErrorDescription != "" {
+			headerValue = fmt.Sprintf("%s, error_description=\"%s\"", headerValue, err.(error_handling.AuthError).ErrorDescription)
+		}
+		context.Set("WWW-Authenticate", headerValue)
+
+		return context.Status(200).Send(nil)
+	}
+	return context.Status(200).JSON(response)
 }

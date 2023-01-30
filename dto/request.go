@@ -46,7 +46,10 @@ type RevokeTokenRequest struct {
 }
 
 type IntrospectRequest struct {
-	Token        string `form:"token"`
-	ClientID     string `form:"client_id"`
-	ClientSecret string `form:"client_secret"`
+	AccessToken string `form:"access_token"`
+}
+
+type IntrospectResponse struct {
+	Realm     string
+	TokenType string
 }

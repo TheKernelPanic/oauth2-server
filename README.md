@@ -10,5 +10,5 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ## Run tests
 
 ```bash
-go test -v .
+go test -v ./test
 ```

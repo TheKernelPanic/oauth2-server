@@ -8,7 +8,7 @@ const (
 	RequireExactRedirectUri = true
 
 	// AllowCredentialsInRequestBody Allow set client id and secret in request body
-	AllowCredentialsInRequestBody = false
+	AllowCredentialsInRequestBody = true
 
 	// AccessTokenLifeTime Access token lifetime (default 1 hour)
 	AccessTokenLifeTime = 3600
@@ -45,6 +45,9 @@ const (
 
 	// RfcDocsRefUrl Rfc link for error references
 	RfcDocsRefUrl = "https://www.rfc-editor.org/rfc/rfc6749"
+
+	// DefaultRealm provided on "WWW-Authenticate" header
+	DefaultRealm = "oAuth2-server"
 )
 
 // Grant type support

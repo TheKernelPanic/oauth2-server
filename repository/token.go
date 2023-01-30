@@ -80,6 +80,18 @@ func FindRefreshToken(token string) (RefreshToken, error) {
 	return refreshToken, nil
 }
 
+func FindAccessToken(token string) (AccessToken, error) {
+
+	var accessToken AccessToken
+
+	databaseConnection.Model(&AccessToken{}).Preload("Client").First(&accessToken, "token = ?", token)
+
+	if accessToken.Token == "" {
+		return accessToken, errors.New("access token not found")
+	}
+	return accessToken, nil
+}
+
 // ExpireRefreshToken Expire refresh token
 //
 // token (primary key)
