@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 	"oauth2/http"
 	"oauth2/repository"
@@ -27,6 +28,7 @@ func main() {
 	}
 
 	appServer := fiber.New()
+	appServer.Use(cors.New())
 
 	oAuthGroup := appServer.Group("/oauth/v2")
 	oAuthGroup.Post("/token", http.TokenController)
@@ -34,6 +36,7 @@ func main() {
 	oAuthGroup.Post("/revoke", http.RevokeController)
 	oAuthGroup.Post("/introspect", http.IntrospectController)
 	oAuthGroup.Get("/introspect", http.IntrospectController)
+
 	err = appServer.Listen(fmt.Sprintf("%s:%s", os.Getenv("APPLICATION_HOST"), os.Getenv("APPLICATION_PORT")))
 	if err != nil {
 		panic(err)
