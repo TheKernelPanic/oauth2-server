@@ -62,6 +62,8 @@ const (
 
 // Response type support
 const (
-	ResponseTypeCode     = "code"
-	ResponseTypeImplicit = "implicit"
+	ResponseTypeCode    = "code"
+	ResponseTypeToken   = "token"
+	ResponseTypeIdToken = "id_token"
+	ResponseTypeNone    = "none"
 )

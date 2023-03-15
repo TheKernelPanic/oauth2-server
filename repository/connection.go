@@ -31,7 +31,8 @@ func InitDatabaseConnection(host string, user string, password string, database 
 		&AuthorizationCode{},
 		&JwtConfig{},
 		&Scope{},
-		&AccessToken{})
+		&AccessToken{},
+		&PublicKey{})
 
 	if err != nil {
 		panic(err)

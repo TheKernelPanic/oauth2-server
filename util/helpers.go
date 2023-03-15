@@ -87,7 +87,7 @@ func BuildUrlAuthorizationCode(redirectUri string, scope string, state string, c
 	return urlParsed.String()
 }
 
-func BuildUrlAuthorizationImplicit(redirectUri string, scope string, state string, accessToken string) string {
+func BuildUrlAuthorizationToken(redirectUri string, scope string, state string, accessToken string) string {
 
 	urlParsed := buildUrlAuthorization(redirectUri, scope, state)
 
@@ -154,3 +154,6 @@ func GetAccessTokenFromHeader(headerValue string) (string, error) {
 	}
 	return strings.TrimPrefix(headerValue, prefix), nil
 }
+
+// TODO: Generate id token
+//

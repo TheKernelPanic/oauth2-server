@@ -16,13 +16,16 @@ func TokenController(context *fiber.Ctx) error {
 	var request dto.TokenRequest
 
 	if err := context.BodyParser(&request); err != nil {
-		return context.Status(400).Send(nil)
+		return context.Status(400).JSON(error_handling.ErrorHandler("invalid_request", "The grant type was not specified in the request", ""))
 	}
 	request.AuthorizationHeader = context.Get("Authorization")
 	grantType, err := auth.TokenRequestAssertion(request)
 	if err != nil {
 		return context.Status(400).JSON(err)
 	}
+	context.Set("Cache-Control", "no-store")
+	context.Set("Pragma", "no-cache")
+
 	return context.Status(200).JSON(grantType.GetAccessToken())
 }
 
@@ -37,12 +40,12 @@ func AuthorizeController(context *fiber.Ctx) error {
 	authorizeRequest.ClientID = context.Query("client_id")
 	authorizeRequest.ResponseType = context.Query("response_type")
 
-	responseType, err := auth.AuthorizeRequestAssertion(authorizeRequest)
+	authorizationUrl, err := auth.AuthorizeRequestAssertion(authorizeRequest)
 	if err != nil {
 		return context.Status(400).JSON(err)
 	}
 
-	return context.Status(config.RedirectStatusCode).Redirect(responseType.GetUri())
+	return context.Status(config.RedirectStatusCode).Redirect(authorizationUrl)
 }
 
 // RevokeController Handle revoke token request

@@ -10,6 +10,7 @@ type AccessTokenResponse struct {
 	ExpiresIn    int32  `json:"expires_in"`
 	Scope        string `json:"scope"`
 	RefreshToken string `json:"refresh_token,omitempty"`
+	IdToken      string `json:"id_token,omitempty"`
 }
 
 type AuthorizeRequest struct {
@@ -18,6 +19,8 @@ type AuthorizeRequest struct {
 	ResponseType string
 	Scope        string
 	ClientID     string
+	Nonce        string
+	ResponseMode string // fragment (default), query, web_message, form_post
 }
 
 type TokenRequest struct {

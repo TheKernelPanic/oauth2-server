@@ -113,3 +113,15 @@ type Scope struct {
 func (Scope) TableName() string {
 	return "scopes"
 }
+
+type PublicKey struct {
+	ClientID   string `gorm:"column:client_id;type:varchar(36);not null"`
+	Client     Client
+	PublicKey  string `gorm:"column:public_key;type:varchar(2000);not null"`
+	PrivateKey string `gorm:"column:private_key;type:varchar(2000);not null"`
+	Algorithm  string `gorm:"column:algorithm;type:varchar(24);not null"`
+}
+
+func (PublicKey) TableName() string {
+	return "public_keys"
+}

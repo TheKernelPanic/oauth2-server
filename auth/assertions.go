@@ -27,64 +27,79 @@ func TokenRequestAssertion(request dto.TokenRequest) (GrantType, error) {
 }
 
 // AuthorizeRequestAssertion Check /authorize request
-func AuthorizeRequestAssertion(request dto.AuthorizeRequest) (ResponseType, error) {
+func AuthorizeRequestAssertion(request dto.AuthorizeRequest) (string, error) {
 
 	if request.ClientID == "" {
-		return nil, error_handling.ErrorHandler("invalid_client", "No client id supplied", "")
+		return "", error_handling.ErrorHandler("invalid_client", "No client id supplied", "")
 	}
 	client, err := repository.FindClientById(request.ClientID)
 	if err != nil {
-		return nil, error_handling.ErrorHandler("invalid_client", "The client id supplied is invalid", "")
+		return "", error_handling.ErrorHandler("invalid_client", "The client id supplied is invalid", "")
 	}
 
 	if request.RedirectUri != "" {
 		urlParsed, _ := url.Parse(request.RedirectUri)
 		if urlParsed.Fragment != "" {
-			return nil, error_handling.ErrorHandler("invalid_uri", "The redirect URI must not contain a fragment'", "")
+			return "", error_handling.ErrorHandler("invalid_uri", "The redirect URI must not contain a fragment'", "")
 		}
 		if client.RedirectUri != "" && !assertRedirectUri(client.RedirectUri, request.RedirectUri) {
-			return nil, error_handling.ErrorHandler("redirect_uri_mismatch", "The redirect URI provided is missing or does not match", "#section-3.1.2")
+			return "", error_handling.ErrorHandler("redirect_uri_mismatch", "The redirect URI provided is missing or does not match", "#section-3.1.2")
 		}
 	} else {
 
 		if client.RedirectUri == "" {
-			return nil, error_handling.ErrorHandler("invalid_uri", "No redirect URI was supplied or stored", "")
+			return "", error_handling.ErrorHandler("invalid_uri", "No redirect URI was supplied or stored", "")
 		}
 		if len(strings.Split(client.RedirectUri, " ")) > 1 {
-			return nil, error_handling.ErrorHandler("invalid_uri", "A redirect URI must be supplied when multiple redirect URIs are registered", "#section-3.1.2.3")
+			return "", error_handling.ErrorHandler("invalid_uri", "A redirect URI must be supplied when multiple redirect URIs are registered", "#section-3.1.2.3")
 		}
 		request.RedirectUri = client.RedirectUri
 	}
 
-	if request.ResponseType == "" || !assertResponseType(request.ResponseType) {
-		return nil, error_handling.ErrorHandler("invalid_request", "Invalid or missing response type", "")
-	}
-	if request.ResponseType == config.ResponseTypeCode {
-		if !assertClientGrantType(client, config.GrantTypeAuthorizationCode) {
-			return nil, error_handling.ErrorHandler("unauthorized_client", "The grant type is unauthorized for this client_id", "")
-		}
-		if config.AuthorizationCodeEnforceRedirect && request.RedirectUri == "" {
-			return nil, error_handling.ErrorHandler("redirect_uri_mismatch", "The redirect URI is mandatory and was not supplied", "")
-		}
-	} else {
+	// TODO: max_age, ui_locales, prompt, display, nonce, response_mode, id_token_hint, login_hint, acr_values
 
-		if !config.AllowImplicit {
-			return nil, error_handling.ErrorHandler("unsupported_response_type", "implicit grant type not supported", "")
+	// TODO Allowed combinations
+	// code token (fragment)
+	// code id_token (fragment)
+	// id_token token (fragment)
+	// code id_token token (fragment)
+	// none
+
+	/*
+		if !assertResponseType(request.ResponseType) {
+			return "", error_handling.ErrorHandler("invalid_request", "Invalid or missing response type", "")
 		}
-		if !assertClientGrantType(client, config.GrantTypeImplicit) {
-			return nil, error_handling.ErrorHandler("unauthorized_client", "The grant type is unauthorized for this client_id", "")
+		if request.ResponseType == config.ResponseTypeCode {
+			if !assertClientGrantType(client, config.GrantTypeAuthorizationCode) {
+				return "", error_handling.ErrorHandler("unauthorized_client", "The grant type is unauthorized for this client_id", "")
+			}
+			if config.AuthorizationCodeEnforceRedirect && request.RedirectUri == "" {
+				return "", error_handling.ErrorHandler("redirect_uri_mismatch", "The redirect URI is mandatory and was not supplied", "")
+			}
+		} else {
+
+			if !config.AllowImplicit {
+				return "", error_handling.ErrorHandler("unsupported_response_type", "implicit grant type not supported", "")
+			}
+			if !assertClientGrantType(client, config.GrantTypeImplicit) {
+				return "", error_handling.ErrorHandler("unauthorized_client", "The grant type is unauthorized for this client_id", "")
+			}
 		}
-	}
+	*/
+
+	// TODO: Error url (query)
+
+	// at_hash
 
 	request.Scope, err = assertScope(request.Scope, client.Scope)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if config.EnforceState && request.State == "" {
-		return nil, error_handling.ErrorHandler("invalid_request", "The state parameter is required", "")
+		return "", error_handling.ErrorHandler("invalid_request", "The state parameter is required", "")
 	}
-	return getResponseType(client, request)
+	return "url", nil
 }
 
 // assertClient Check client credentials against DB
@@ -138,10 +153,16 @@ func assertScope(requestedScope string, clientScope string) (string, error) {
 }
 
 // assertResponseType Check that the response type is supported
-func assertResponseType(responseTypeRequested string) bool {
+func assertResponseType(responseTypesRequested string) bool {
 
-	for _, allowed := range []string{config.ResponseTypeCode, config.ResponseTypeImplicit} {
-		if responseTypeRequested == allowed {
+	responseTypesRequestedList := strings.Split(responseTypesRequested, " ")
+
+	if len(responseTypesRequestedList) == 0 {
+		return false
+	}
+
+	for _, allowed := range []string{config.ResponseTypeCode, config.ResponseTypeToken, config.ResponseTypeIdToken} {
+		if responseTypesRequested == allowed {
 			return true
 		}
 	}

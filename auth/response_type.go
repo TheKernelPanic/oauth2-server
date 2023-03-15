@@ -13,8 +13,8 @@ func getResponseType(client repository.Client, currentRequest dto.AuthorizeReque
 	if currentRequest.ResponseType == config.ResponseTypeCode {
 		return &ResponseTypeCode{Client: client, CurrentRequest: currentRequest}, nil
 	}
-	if currentRequest.ResponseType == config.ResponseTypeImplicit {
-		return &ResponseTypeImplicit{Client: client, CurrentRequest: currentRequest}, nil
+	if currentRequest.ResponseType == config.ResponseTypeToken {
+		return &ResponseTypeToken{Client: client, CurrentRequest: currentRequest}, nil
 	}
 	return nil, errors.New(fmt.Sprintf("Response type \"%s\" not supported", currentRequest.ResponseType))
 }
@@ -29,7 +29,13 @@ type ResponseTypeCode struct {
 	CurrentRequest dto.AuthorizeRequest
 }
 
-type ResponseTypeImplicit struct {
+type ResponseTypeToken struct {
+	Client         repository.Client
+	User           repository.User
+	CurrentRequest dto.AuthorizeRequest
+}
+
+type ResponseTypeIdToken struct {
 	Client         repository.Client
 	User           repository.User
 	CurrentRequest dto.AuthorizeRequest
@@ -53,7 +59,7 @@ func (responseType *ResponseTypeCode) GetUri() string {
 		code)
 }
 
-func (responseType *ResponseTypeImplicit) GetUri() string {
+func (responseType *ResponseTypeToken) GetUri() string {
 
 	accessToken := util.GenerateToken()
 
@@ -63,7 +69,7 @@ func (responseType *ResponseTypeImplicit) GetUri() string {
 		responseType.Client,
 		config.AccessTokenLifeTime)
 
-	return util.BuildUrlAuthorizationImplicit(
+	return util.BuildUrlAuthorizationToken(
 		responseType.CurrentRequest.RedirectUri,
 		responseType.CurrentRequest.Scope,
 		responseType.CurrentRequest.State,
